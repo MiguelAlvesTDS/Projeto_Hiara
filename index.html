@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#020817">
+  <title>RAM LAB — FPS: Salvar a Memória</title>
+  <style>
+:root{--cyan:#72f5ff;--blue:#168bff;--glass:rgba(5,17,38,.78);--line:rgba(98,229,255,.35)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#020817;color:#eafaff;font-family:Inter,Segoe UI,Arial,sans-serif}#world{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none}
+.hud{position:fixed;z-index:3;background:var(--glass);border:1px solid var(--line);box-shadow:0 12px 40px #0008,0 0 25px #00cfff16;backdrop-filter:blur(14px);border-radius:16px}
+#brand{left:16px;top:16px;padding:12px 16px;display:flex;align-items:center;gap:10px}#brand .orb{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#50f5ff 24%,#0571bd 64%,#06152a);box-shadow:0 0 20px #29dfff}#brand strong{letter-spacing:1.8px;font-size:14px}#brand small{display:block;color:#9bc6df;font-size:10px;letter-spacing:2px;margin-top:2px}
+#mission{left:16px;top:78px;width:min(340px,calc(100vw - 32px));padding:14px 16px}#mission .eyebrow{font-size:10px;letter-spacing:2px;color:var(--cyan);font-weight:800}#mission h2{font-size:17px;margin:6px 0;color:white}#mission p{font-size:12px;line-height:1.5;color:#c2d9ec;margin:0}#progress{height:4px;background:#18324d;border-radius:10px;margin-top:12px;overflow:hidden}#progress>i{display:block;width:0;height:100%;background:linear-gradient(90deg,#168bff,#7efff5);box-shadow:0 0 12px #49efff;transition:width .3s}
+#status{right:16px;top:16px;padding:10px 13px;font-size:11px;color:#bde8fa;display:flex;gap:12px;align-items:center}#status b{color:#75f7ff}#status .dot{width:7px;height:7px;border-radius:50%;background:#57ffae;box-shadow:0 0 10px #57ffae}
+#crosshair{position:fixed;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);z-index:2;pointer-events:none;opacity:.8}#crosshair:before,#crosshair:after{content:'';position:absolute;background:#dfffff;box-shadow:0 0 8px #3deaff}#crosshair:before{left:8px;top:1px;width:2px;height:16px}#crosshair:after{top:8px;left:1px;width:16px;height:2px}
+#interact{left:50%;bottom:112px;transform:translateX(-50%);padding:10px 15px;font-size:12px;display:none;border-color:#61f7ff;color:#eaffff}#interact kbd{background:#0d4566;padding:3px 7px;border-radius:5px;margin-right:8px;color:white}
+#bottom{left:50%;bottom:14px;transform:translateX(-50%);padding:10px 13px;display:flex;gap:12px;align-items:center;white-space:nowrap;font-size:11px;color:#b8d6e9}#bottom .key{display:inline-grid;place-items:center;min-width:22px;height:22px;border:1px solid #45758e;background:#0b263e;border-radius:5px;color:#e8feff;font-weight:700;margin:0 2px}#bottom .sep{width:1px;height:24px;background:#31516d}
+#sideActions{right:16px;top:72px;display:grid;gap:8px;padding:9px}button{font:inherit;cursor:pointer;color:#eaffff;background:linear-gradient(135deg,#103a5b,#0a2340);border:1px solid #3b99bd;border-radius:10px;padding:9px 12px;transition:transform .15s,border-color .15s,background .15s}button:hover{transform:translateY(-1px);border-color:#88f8ff;background:linear-gradient(135deg,#15567c,#103251)}button:active{transform:translateY(1px)}button:disabled{opacity:.45;cursor:not-allowed}
+#overlay{position:fixed;inset:0;z-index:10;background:radial-gradient(ellipse at 50% 38%,#0a2e51d9,#020713f5 65%);display:grid;place-items:center;padding:18px}#welcome{width:min(900px,100%);display:grid;grid-template-columns:1.1fr .9fr;overflow:hidden;border-radius:22px;border:1px solid #56dff477;background:#06152bea;box-shadow:0 30px 100px #000b,0 0 60px #00cfff20}#welcome .copy{padding:clamp(22px,4vw,42px)}#welcome .copy .tag{color:#6ff5ff;letter-spacing:3px;font-size:11px;font-weight:800}#welcome h1{font-size:clamp(30px,5vw,52px);line-height:1.02;margin:14px 0 12px}#welcome h1 span{color:#6ff5ff;text-shadow:0 0 30px #00bfff77}#welcome p{color:#bdd8eb;line-height:1.65;font-size:14px;max-width:470px}#welcome .hero{min-height:380px;background:#06152b;position:relative}#welcome .hero img{width:100%;height:100%;object-fit:cover;display:block}#welcome .hero:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#06152b33,transparent 30%),linear-gradient(0deg,#06152b88,transparent 50%)}#start{margin-top:14px;background:linear-gradient(90deg,#087cca,#00aeb9);border:0;padding:13px 20px;font-weight:800;box-shadow:0 0 25px #00cfff55}#helpText{font-size:11px!important;color:#85a9c2!important;margin-top:15px}
+#modal{position:fixed;z-index:8;inset:0;display:none;place-items:center;padding:18px;background:#010714b8;backdrop-filter:blur(8px)}#card{width:min(760px,100%);max-height:min(88vh,820px);overflow:auto;border-radius:20px;border:1px solid #5beaff66;background:linear-gradient(145deg,#0a2540f5,#050e20f5);box-shadow:0 20px 80px #000b;display:grid;grid-template-columns:.95fr 1.05fr}#card .visual{min-height:360px;background:#06132a}#card .visual img{width:100%;height:100%;object-fit:cover;display:block}#card .content{padding:25px}#card .tag{font-size:10px;letter-spacing:2px;color:#6af3ff;font-weight:800}#card h2{margin:8px 0 10px;font-size:25px}#card p,#card li{font-size:13px;color:#c6dced;line-height:1.65}#card ul{padding-left:19px}#card .buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}#closeModal{background:#142840}
+#quiz{display:none;position:fixed;inset:0;z-index:12;background:#020716eF;place-items:center;padding:18px}#quizbox{width:min(520px,100%);padding:25px;border:1px solid #62eaff66;border-radius:20px;background:#081a31;box-shadow:0 25px 80px #000b}#quizbox h2{color:#72f5ff;margin-top:0}#answers{display:grid;gap:9px;margin:18px 0}#feedback{min-height:25px;color:#8bf6e3;font-size:13px}
+#touch{display:flex;position:fixed;z-index:4;left:16px;bottom:18px;right:auto;pointer-events:none;justify-content:space-between;align-items:end}#pad{display:grid;grid-template-columns:48px 48px 48px;grid-template-rows:48px 48px;gap:5px;pointer-events:auto}#pad button{padding:0;font-size:20px;background:#082541dd;backdrop-filter:blur(8px);touch-action:none;min-width:48px;min-height:48px;box-shadow:0 0 16px #00cfff22}#pad .up{grid-column:2;grid-row:1}#pad .left{grid-column:1;grid-row:2}#pad .down{grid-column:2;grid-row:2}#pad .right{grid-column:3;grid-row:2}#lookzone{width:125px;height:105px;border:1px dashed #7defff66;border-radius:16px;color:#9dd9ec;font-size:10px;display:grid;place-items:center;background:#08254166;pointer-events:auto;touch-action:none}
+@media(max-width:680px){#touch{left:10px;right:10px;bottom:90px}#welcome{grid-template-columns:1fr}#welcome .hero{min-height:190px;grid-row:1}#welcome .copy{padding:22px}#welcome h1{font-size:33px}#mission{top:66px;width:calc(100vw - 32px)}#mission p{font-size:11px}#status{top:auto;bottom:14px;right:12px}#bottom{display:none}#sideActions{right:12px;top:auto;bottom:205px;display:flex;flex-direction:column;padding:7px}#sideActions button{padding:8px;font-size:10px}#interact{bottom:207px}#card{grid-template-columns:1fr;max-height:90vh}#card .visual{min-height:180px;height:180px}#card .content{padding:18px}#touch{display:flex}}
+
+#stationNav{position:fixed;z-index:4;right:16px;bottom:16px;top:auto;width:210px;padding:12px;border-radius:15px;background:rgba(4,18,39,.84);border:1px solid #56eaff66;box-shadow:0 0 24px #00dfff20;backdrop-filter:blur(12px)}
+#stationNav>b{font-size:10px;letter-spacing:2px;color:#76f5ff;display:block;margin-bottom:8px}
+#stationButtons{display:grid;gap:5px}
+#stationButtons button{text-align:left;font-size:11px;padding:8px 9px;border-radius:8px}
+#stationButtons button:before{content:'◆';color:#5cf4ff;margin-right:7px}
+#touch{gap:12px}
+#lookzone{font-weight:800;letter-spacing:1px;box-shadow:inset 0 0 20px #00cfff16,0 0 18px #00cfff18}
+#pad button{user-select:none;-webkit-user-select:none}
+@media(max-width:680px){#stationNav{right:8px;top:8px;bottom:auto;width:158px;padding:8px}#stationButtons button{font-size:9px;padding:6px}#touch{bottom:12px;left:8px;right:8px}#lookzone{width:105px;height:95px}#mission{max-width:calc(100vw - 175px)}}
+
+
+
+
+html,body{background:#020817!important}#fps-game{background:radial-gradient(ellipse at 50% 45%,#123b5d 0%,#06162b 58%,#010611 100%)}#fps-view{image-rendering:auto;filter:saturate(1.16) contrast(1.06)}#fps-hud{pointer-events:none}#fps-top,#fps-controlbar,#fps-touch,#fps-look,#fps-panel{pointer-events:auto}#fps-controlbar{position:absolute;z-index:7;top:68px;right:16px;display:flex;gap:8px;pointer-events:auto}#fps-controlbar button{font-size:11px;font-weight:900;letter-spacing:.5px;padding:10px 13px;background:linear-gradient(135deg,#123f61ee,#091b35ee);border:1px solid #68efff99;box-shadow:0 0 20px #00dfff22;backdrop-filter:blur(10px)}#fps-touch{display:flex!important;left:16px;right:16px;bottom:16px;align-items:end;justify-content:space-between;z-index:8}#fps-touch .cluster{grid-template-columns:54px 54px 54px;grid-template-rows:54px 54px;gap:6px}#fps-touch button{min-width:52px;min-height:52px;font-size:20px;background:linear-gradient(145deg,#12476bF2,#071a34F2);border:1px solid #74edffbb;box-shadow:0 0 18px #00cfff35;touch-action:none;user-select:none;-webkit-user-select:none}#fps-touch .cluster button{border-radius:14px}#fps-fire{width:88px;height:88px;min-width:88px!important;min-height:88px!important;border-radius:50%!important;font-size:13px!important;background:radial-gradient(circle at 35% 25%,#b9ffff,#1689c7 45%,#4b1c9b 100%)!important;box-shadow:0 0 30px #37dcff77!important}#fps-look{display:block!important;position:absolute;z-index:6;left:50%;right:auto;top:auto;bottom:22px;transform:translateX(-50%);width:min(34vw,260px);height:76px;border:1px dashed #78edff99;border-radius:16px;background:linear-gradient(135deg,#09243b99,#142a4d99);color:#c9fbff;text-align:center;padding:10px 8px;font-size:10px;letter-spacing:1.4px;font-weight:900;touch-action:none;user-select:none;pointer-events:auto;box-shadow:inset 0 0 22px #00dfff15}#fps-center{z-index:4}#fps-panel{z-index:12;backdrop-filter:blur(18px);border:1px solid #70efff99;box-shadow:0 20px 80px #000c,0 0 40px #00dfff22}#fps-msg{z-index:9;text-shadow:0 2px 8px #000}#fps-weapon{filter:drop-shadow(0 0 15px #00dfff88)}#fps-game.fps-recoil #fps-weapon{filter:drop-shadow(0 0 28px #b7ffff)}@media(max-width:700px){#fps-controlbar{top:58px;right:8px;gap:5px}#fps-controlbar button{font-size:9px;padding:8px 9px}#fps-touch{left:8px;right:8px;bottom:10px}#fps-touch .cluster{grid-template-columns:46px 46px 46px;grid-template-rows:46px 46px;gap:4px}#fps-touch button{min-width:44px;min-height:44px;font-size:17px}#fps-fire{width:70px;height:70px;min-width:70px!important;min-height:70px!important;font-size:10px!important}#fps-look{width:32vw;height:60px;bottom:12px;font-size:8px;padding-top:8px}#fps-top{top:8px;left:8px;right:8px;gap:4px}.fps-pill{padding:6px 7px;font-size:9px}}
+
+  
+/* Correção do ecrã do jogo: canvas e HUD ocupam a janela inteira */
+#fps-game {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: none;
+  z-index: 1;
+}
+#fps-view {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+#fps-hud {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+#fps-look, #fps-touch, #fps-panel {
+  z-index: 5;
+}
+
+
+/* RAM FPS — edição melhorada */
+#fps-launch{
+ position:fixed;z-index:20;left:50%;top:50%;transform:translate(-50%,-50%);
+ padding:18px 28px;border:1px solid #79f7ff;border-radius:15px;
+ color:#efffff;font-size:clamp(14px,2vw,19px);font-weight:950;letter-spacing:1.4px;
+ background:linear-gradient(110deg,#087fbd,#08b9b5 55%,#1552a4);
+ box-shadow:0 0 24px #00dfff66,0 14px 50px #0009;cursor:pointer;
+}
+#fps-launch:hover{transform:translate(-50%,-52%) scale(1.04);filter:brightness(1.15)}
+#fps-game{background:radial-gradient(ellipse at 50% 38%,#174b70 0%,#071b32 55%,#010611 100%)}
+#fps-view{display:block;width:100%;height:100%;touch-action:none}
+#fps-hud{font-family:Inter,Segoe UI,Arial,sans-serif;color:#eaffff}
+#fps-top{position:absolute;top:15px;left:15px;right:15px;display:flex;gap:8px;align-items:center;z-index:6;pointer-events:none}
+.fps-pill{padding:10px 13px;border-radius:11px;background:#04182bd9;border:1px solid #64eaff77;
+ box-shadow:0 5px 20px #0005,inset 0 0 18px #00cfff0c;backdrop-filter:blur(12px);
+ color:#d9faff;font-size:11px;letter-spacing:.5px;font-weight:800}
+.fps-pill b{color:#75f7ff}
+#fps-exit{margin-left:auto;pointer-events:auto}
+#fps-center{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);
+ border:1px solid #bfffff99;border-radius:50%;box-shadow:0 0 12px #00eaff;pointer-events:none}
+#fps-center:before,#fps-center:after{content:"";position:absolute;background:#eaffff;box-shadow:0 0 8px #00eaff}
+#fps-center:before{width:2px;height:30px;left:9px;top:-5px}
+#fps-center:after{height:2px;width:30px;top:9px;left:-5px}
+#fps-msg{position:absolute;top:22%;left:50%;transform:translateX(-50%);padding:10px 16px;
+ border-radius:10px;background:#03182bdc;border:1px solid #65efff77;color:#dfffff;
+ font-weight:900;letter-spacing:1px;font-size:13px;opacity:0;transition:opacity .2s;text-align:center}
+#fps-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 32px));
+ max-height:calc(100vh - 36px);overflow:auto;padding:clamp(20px,4vw,34px);border-radius:22px;
+ background:linear-gradient(145deg,#092947f5,#030d20f7 80%);color:#eafaff;text-align:left}
+#fps-panel h2{margin:0 0 14px;font-size:clamp(22px,4vw,32px);line-height:1.1;color:#83f7ff;text-shadow:0 0 20px #00bfff44}
+#fps-panel p{font-size:14px;line-height:1.7;color:#c4deed}
+#fps-panel .fps-small{font-size:11px;color:#8fb8d0}
+#fps-panel button{margin-top:10px;padding:13px 18px;font-weight:900;background:linear-gradient(100deg,#087fbd,#08aeb7);border:0;box-shadow:0 0 22px #00cfff33}
+#fps-opts{display:grid;gap:9px;margin:18px 0}
+#fps-opts button{text-align:left;margin:0;background:#0c2c49;border:1px solid #3c8baa;box-shadow:none}
+#fps-opts button:hover{background:#145071;border-color:#78f6ff}
+#fps-controlbar{top:72px}
+#fps-touch{z-index:8}
+#fps-look{z-index:7}
+#fps-weapon{display:none!important}
+#fps-fire{font-weight:950;letter-spacing:1px}
+#fps-pause{min-width:104px}
+button:focus-visible{outline:3px solid #b7ffff;outline-offset:3px}
+@media(max-width:700px){
+ #fps-top{top:7px;left:7px;right:7px;gap:4px;flex-wrap:wrap}
+ .fps-pill{padding:7px 8px;font-size:9px}
+ #fps-exit{margin-left:0}
+ #fps-controlbar{top:64px;right:7px}
+ #fps-weapon{width:28vw;right:2%;bottom:17%}
+ #fps-msg{top:26%;width:calc(100% - 30px);font-size:11px}
+ #fps-panel{padding:20px}
+}
+
+</style>
+</head>
+<body>
+<button id="fps-launch">⚔ INICIAR MISSÃO FPS · SALVAR A RAM</button>
+<div id="fps-game">
+ <canvas id="fps-view"></canvas>
+ <div id="fps-hud">
+  <div id="fps-top"><div class="fps-pill">❤️ <b id="fps-lives">3</b> vidas</div><div class="fps-pill">CHECKPOINT <b id="fps-check">0/6</b></div><div class="fps-pill">☣ VÍRUS <b id="fps-kills">0</b></div><div class="fps-pill">ARMA: <b>DDR5 STORM</b></div><button id="fps-exit" class="fps-pill">SAIR ✕</button></div>
+  <div id="fps-center"></div><div id="fps-msg"></div><div id="fps-controlbar"><button id="fps-sprint" type="button">🏃 CORRER: OFF</button><button id="fps-invert" type="button">↕ CONTROLos INVERTIDOS: OFF</button><button id="fps-pause" type="button">Ⅱ PAUSAR</button></div>
+  <svg id="fps-weapon" viewBox="0 0 240 180" aria-label="Arma DDR3"><defs><linearGradient id="ramgrad" x2="0" y2="1"><stop stop-color="#a8fff9"/><stop offset=".25" stop-color="#19b9d9"/><stop offset="1" stop-color="#075078"/></linearGradient></defs><g transform="rotate(-12 120 100)"><rect x="82" y="22" width="68" height="137" rx="7" fill="#062b45" stroke="#69faff" stroke-width="4"/><rect x="91" y="31" width="50" height="112" rx="3" fill="url(#ramgrad)"/><g fill="#0a2940"><rect x="97" y="44" width="15" height="24" rx="2"/><rect x="120" y="44" width="15" height="24" rx="2"/><rect x="97" y="78" width="15" height="24" rx="2"/><rect x="120" y="78" width="15" height="24" rx="2"/></g><path d="M82 146h68v12h-7v-5h-8v5h-8v-5h-8v5h-8v-5h-8v5h-8v-5h-8z" fill="#e7c66c"/><text x="116" y="17" text-anchor="middle" fill="#bfffff" font-size="12" font-weight="bold">DDR3</text><path d="M115 25v-15m-8 8 8-8 8 8" stroke="#fff" stroke-width="3" fill="none"/></g></svg>
+ </div>
+ <div id="fps-look">DESLIZA AQUI PARA OLHAR 360°</div><div id="fps-touch"><div class="cluster"><button data-fps="w" style="grid-column:2">▲</button><button data-fps="a">◀</button><button data-fps="s">▼</button><button data-fps="d">▶</button></div><button id="fps-fire">DISPARAR<br>DDR3</button></div>
+ <div id="fps-panel"><h2>OPERAÇÃO: SALVAR A MEMÓRIA</h2><p>A cidade futurista RAM CITY está sob ataque! Percorre as seis estações, aprende sobre memória e elimina os drones-vírus com a arma DDR3. No fim, responde a 10 perguntas para salvar a RAM.</p><p><b>3 vidas.</b> Usa os botões no ecrã ou WASD para andar. Desvia-te das roulotes e barreiras, aponta com o rato ou com a zona de mira e dispara. Os drones também disparam plasma contra ti. O botão INVERTER troca os sentidos dos controlos.</p><p class="fps-small">Controlos no ecrã: setas para andar, zona central para apontar, DISPARAR para eliminar vírus. INVERTER troca o sentido de todos os eixos. No PC também podes usar WASD e o rato.</p><button id="fps-start">COMEÇAR A MISSÃO</button></div>
+</div>
+<script>
+(()=>{
+const $=id=>document.getElementById(id), game=$('fps-game'), cv=$('fps-view'),ctx=cv.getContext('2d');
+let active=false,paused=true,last=0,player={x:0,z:0,yaw:0},lookPitch=0,keys={},invertControls=false,velF=0,velSide=0,sprintMode=false,lives=3,kills=0,cp=0,shots=[],enemyBolts=[],enemies=[],particles=[],lastHit=0,lastFireAt=0,quizIndex=0,score=0;
+const obstacles=[
+ {kind:'caravan',x:-3.8,z:-9,rx:1.75,rz:2.35,paint:'#17a9ba'},
+ {kind:'caravan',x:4.2,z:-18,rx:1.75,rz:2.35,paint:'#a45bd3'},
+ {kind:'wreck',x:-4.4,z:-28,rx:1.55,rz:1.75,paint:'#d17a45'},
+ {kind:'barrier',x:.1,z:-37,rx:2.25,rz:.78,paint:'#ffb94e'},
+ {kind:'caravan',x:4.3,z:-46,rx:1.75,rz:2.35,paint:'#1c9e83'},
+ {kind:'van',x:-4.1,z:-56,rx:1.6,rz:2.0,paint:'#5779c9'},
+ {kind:'barrier',x:2.6,z:-65,rx:2.15,rz:.8,paint:'#ff9b43'},
+ {kind:'wreck',x:-4.2,z:-73,rx:1.5,rz:1.8,paint:'#b65d76'}
+];
+function blockedByObstacle(x,z){
+ return obstacles.some(o=>{
+  const padX=o.kind==='caravan'?.34:.42, padZ=o.kind==='caravan'?.48:.42;
+  const dx=Math.abs(x-o.x)/(o.rx+padX), dz=Math.abs(z-o.z)/(o.rz+padZ);
+  return Math.pow(dx,4)+Math.pow(dz,4)<1;
+ });
+}
+function obstacleBlocksShot(dx,dz,maxForward){
+ return obstacles.some(o=>{
+  const ox=o.x-player.x,oz=o.z-player.z;
+  const along=ox*dx+oz*dz;
+  const across=Math.abs(ox*dz-oz*dx);
+  return along>.5&&along<maxForward&&
+   Math.abs(along-(ox*dx+oz*dz))<o.rz+1.0&&across<o.rx+.25;
+ });
+}
+const checkpoints=[
+ ['CHECKPOINT 1 · O QUE É A RAM','A RAM (Random Access Memory) é a memória principal de acesso rápido. Guarda temporariamente os dados e instruções que o processador está a utilizar.'],
+ ['CHECKPOINT 2 · MEMÓRIA VOLÁTIL','A RAM é volátil: precisa de energia para manter os dados. Quando o computador se desliga, os dados temporários perdem-se.'],
+ ['CHECKPOINT 3 · CPU E RAM','O processador (CPU) acede à RAM para obter rapidamente dados e instruções dos programas em execução.'],
+ ['CHECKPOINT 4 · CAPACIDADE E DESEMPENHO','A capacidade da RAM mede-se normalmente em GB. Mais capacidade ajuda a manter mais aplicações e dados disponíveis ao mesmo tempo.'],
+ ['CHECKPOINT 5 · GERAÇÕES DDR','DDR3, DDR4 e DDR5 são gerações de memória. As gerações mais recentes oferecem melhorias de largura de banda e eficiência, mas não são intercambiáveis em qualquer motherboard.'],
+ ['CHECKPOINT 6 · PROTEGER A MEMÓRIA','A RAM não substitui o armazenamento permanente. Guarda os teus ficheiros num SSD ou HDD e mantém o sistema atualizado e protegido contra software malicioso.']
+];
+const questions=[
+['O que significa a sigla RAM?',['Random Access Memory','Read And Move','Rapid Action Module'],0],
+['A RAM é uma memória…',['Permanente','Volátil','Ótica'],1],
+['Qual é a função principal da RAM?',['Guardar ficheiros para sempre','Guardar temporariamente dados usados pelo sistema','Arrefecer o processador'],1],
+['Que componente acede frequentemente aos dados da RAM?',['Monitor','Processador (CPU)','Fonte de alimentação'],1],
+['O que acontece aos dados temporários da RAM quando se desliga o computador?',['São perdidos','Passam para o teclado','Ficam guardados para sempre'],0],
+['Em que unidade é normalmente indicada a capacidade da RAM?',['GHz','GB','Volts'],1],
+['Qual destas é uma geração de memória RAM?',['DDR5','USB-C','HDMI'],0],
+['Podemos instalar qualquer geração DDR em qualquer motherboard?',['Sim, todas são iguais','Não, depende da compatibilidade','Só se tiver RGB'],1],
+['Qual é um exemplo de armazenamento permanente?',['RAM','Cache L1','SSD'],2],
+['O que ajuda a proteger o computador contra software malicioso?',['Atualizações e software de segurança','Desligar o monitor','Retirar a RAM'],0]
+];
+function resize(){const dpr=Math.min(window.devicePixelRatio||1,2);cv.width=Math.round(innerWidth*dpr);cv.height=Math.round(innerHeight*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',resize);resize();
+function msg(t){$('fps-msg').textContent=t;$('fps-msg').style.opacity=1;clearTimeout(msg.timer);msg.timer=setTimeout(()=>$('fps-msg').style.opacity=0,2400)}
+function hud(){$('fps-lives').textContent=lives;$('fps-check').textContent=cp+'/6';$('fps-kills').textContent=kills}
+function takePlayerHit(message){
+ const now=performance.now();
+ if(now-lastHit<900)return false;
+ lastHit=now;lives--;hud();msg(message);
+ if(lives<=0){
+  active=false;paused=true;
+  // Liberta o cursor do rato para poder clicar em REVIVER
+  document.exitPointerLock?.();
+  document.body.style.cursor='default';
+  $('fps-panel').innerHTML='<h2>MISSÃO FALHADA</h2><p>Foste eliminado pelos drones-vírus. Clica no botão para reviver e recomeçar a operação.</p><button id="fps-retry">♻ REVIVER</button>';
+  $('fps-panel').style.display='block';
+  $('fps-retry').onclick=()=>{
+   $('fps-panel').innerHTML=panelIntro;
+   $('fps-start').onclick=start;
+   start();
+  };
+ }
+ return true;
+}
+function reset(){player={x:0,z:0,yaw:0};lookPitch=0;lives=3;kills=0;cp=0;shots=[];enemyBolts=[];particles=[];enemies=[];quizIndex=0;score=0;lastHit=0;lastFireAt=0;for(let i=0;i<9;i++)spawnEnemy(-8-Math.random()*45,(Math.random()-.5)*10);hud()}
+function spawnEnemy(z,x){
+ const roll=Math.random(),type=roll<.42?'scout':roll<.82?'stalker':'titan';
+ const stats=type==='titan'?{hp:3,scale:1.02,speed:.78}:type==='stalker'?{hp:2,scale:.86,speed:1.02}:{hp:1,scale:.66,speed:1.24};
+ enemies.push({x:x??(Math.random()-.5)*12,z:z??(10+Math.random()*35),type,...stats,maxHp:stats.hp,phase:Math.random()*7,hit:0,drift:Math.random()*Math.PI*2,shotTimer:.8+Math.random()*1.8});
+}
+function start(){reset();$('fps-panel').style.display='none';active=true;paused=false;game.style.display='block';last=performance.now();if(matchMedia('(pointer:fine)').matches)cv.requestPointerLock?.();requestAnimationFrame(loop)}
+$('fps-launch').onclick=()=>{ $('fps-launch').style.display='none';game.style.display='block';$('fps-panel').style.display='block';};$('fps-start').onclick=start;
+$('fps-exit').onclick=()=>{active=false;game.style.display='none';$('fps-launch').style.display='block';document.exitPointerLock?.()};
+document.addEventListener('pointerlockchange',()=>{paused=document.pointerLockElement!==cv&&game.style.display==='block'&&$('fps-panel').style.display==='none'});
+document.addEventListener('mousemove',e=>{if(active&&!paused&&document.pointerLockElement===cv){player.yaw+=e.movementX*.0032*(invertControls?-1:1);lookPitch=Math.max(-.8,Math.min(.8,lookPitch+e.movementY*.0022*(invertControls?-1:1)));}});
+let drag=null;cv.addEventListener('pointerdown',e=>{if(!active||$('fps-panel').style.display!=='none')return;if(document.pointerLockElement!==cv){drag={x:e.clientX,y:e.clientY};cv.setPointerCapture?.(e.pointerId)}else if(e.pointerType==='mouse')fire()});cv.addEventListener('pointermove',e=>{if(drag){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;player.yaw+=dx*.0055*(invertControls?-1:1);lookPitch=Math.max(-.8,Math.min(.8,lookPitch+dy*.0038*(invertControls?-1:1)));drag={x:e.clientX,y:e.clientY}}});cv.addEventListener('pointerup',()=>drag=null);cv.addEventListener('pointercancel',()=>drag=null);
+addEventListener('keydown',e=>{if(e.key==='Escape'&&active&&document.pointerLockElement===cv){document.exitPointerLock?.();paused=true;msg('Rato libertado — toca no ecrã para voltar a apontar.');return;}keys[e.key.toLowerCase()]=true;if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase()))e.preventDefault()});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+document.querySelectorAll('[data-fps]').forEach(b=>{let k=b.dataset.fps;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;b.setPointerCapture?.(e.pointerId)});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false))});$('fps-fire').onclick=fire;
+function syncInvert(){const b=$('fps-invert');if(b)b.textContent='↕ CONTROLOS INVERTIDOS: '+(invertControls?'ON':'OFF');}
+$('fps-sprint').onclick=()=>{sprintMode=!sprintMode;$('fps-sprint').textContent='🏃 CORRER: '+(sprintMode?'ON':'OFF');msg(sprintMode?'Modo corrida ativado':'Modo corrida desativado');};
+$('fps-invert').onclick=()=>{invertControls=!invertControls;syncInvert();msg(invertControls?'Controlos invertidos ativados':'Controlos normais ativados');};syncInvert();
+$('fps-pause').onclick=()=>{if(!active)return;paused=!paused;$('fps-pause').textContent=paused?'▶ CONTINUAR':'Ⅱ PAUSAR';if(!paused){last=performance.now();requestAnimationFrame(loop);}else msg('Jogo em pausa');};
+// Dedicated touch-look surface: keeps movement buttons and aiming independent.
+const lookZone=$('fps-look');let lookTouch=null;
+lookZone.addEventListener('pointerdown',e=>{if(!active||paused||$('fps-panel').style.display!=='none')return;lookTouch={id:e.pointerId,x:e.clientX,y:e.clientY};lookZone.setPointerCapture?.(e.pointerId);});
+lookZone.addEventListener('pointermove',e=>{if(!lookTouch||lookTouch.id!==e.pointerId)return;const dx=e.clientX-lookTouch.x,dy=e.clientY-lookTouch.y;player.yaw+=dx*.0072*(invertControls?-1:1);lookPitch=Math.max(-.8,Math.min(.8,lookPitch+dy*.0048*(invertControls?-1:1)));lookTouch.x=e.clientX;lookTouch.y=e.clientY;});
+['pointerup','pointercancel'].forEach(ev=>lookZone.addEventListener(ev,()=>lookTouch=null));
+
+function fire(){
+ if(!active||paused)return;
+ const now=performance.now();
+ if(now-lastFireAt<165)return;
+ lastFireAt=now;
+ const dx=Math.sin(player.yaw),dz=-Math.cos(player.yaw);
+ let target=null,best=1e9;
+ for(const e of enemies){
+  const ex=e.x-player.x,ez=e.z-player.z,forward=ex*dx+ez*dz,side=Math.abs(ex*dz-ez*dx);
+  if(forward>.6&&forward<50&&side<Math.max(.95,forward*.12)&&forward<best&&!obstacleBlocksShot(dx,dz,forward)){best=forward;target=e;}
+ }
+ shots.push({x:player.x+dx*.7,z:player.z+dz*.7,dx,dz,life:.3});
+ $('fps-weapon').style.transform='translateY(-28px) rotate(-10deg) scale(1.08)';
+ $('fps-game').classList.add('fps-recoil');
+ setTimeout(()=>$('fps-weapon').style.transform='',125);
+ setTimeout(()=>$('fps-game').classList.remove('fps-recoil'),145);
+ // Muzzle flash, plasma sparks and a short energy trail.
+ for(let i=0;i<24;i++){
+  const spread=(Math.random()-.5)*.95;
+  particles.push({x:player.x+dx*.95,y:.95+(Math.random()-.5)*.22,z:player.z+dz*.95,
+   vx:dx*2.8+spread,vy:(Math.random()-.5)*2,vz:dz*2.8+spread,life:.3+Math.random()*.2,
+   color:i%3?'#83ffff':'#ffdf78'});
+ }
+ if(target){
+  target.hp--;target.hit=now+190;
+  for(let i=0;i<18;i++)particles.push({x:target.x,y:1,z:target.z,vx:(Math.random()-.5)*3.6,vy:Math.random()*2.4,vz:(Math.random()-.5)*3.6,life:.6,color:i%2?'#ffbd72':'#83faff'});
+  if(target.hp<=0){
+   kills++;
+   for(let i=0;i<42;i++)particles.push({x:target.x,y:1,z:target.z,vx:(Math.random()-.5)*5.8,vy:Math.random()*3.4,vz:(Math.random()-.5)*5.8,life:1.1,color:i%2?'#ffdf78':'#77faff'});
+   msg('DRONE DESINTEGRADO! +1');
+  }else{msg('BLINDAGEM ATINGIDA! '+target.hp+' CAMADAS RESTANTES');}
+  hud();
+ }
+}
+function project(x,z,y=0){
+  const dx=x-player.x, dz=z-player.z, c=Math.cos(player.yaw), s=Math.sin(player.yaw);
+  // Câmara FPS: o eixo positivo de profundidade aponta para a frente (-Z).
+  const rx=dx*c+dz*s, rz=-dx*s-dz*c;
+  if(rz<.3)return null;
+  const f=Math.min(innerWidth,innerHeight)*.9/rz;
+  return {x:innerWidth/2+rx*f,y:innerHeight*.49-y*f+lookPitch*innerHeight*.42,size:f,depth:rz};
+}
+function draw(){let w=innerWidth,h=innerHeight;
+const cityTime=performance.now();
+let sky=ctx.createLinearGradient(0,0,0,h*.62);sky.addColorStop(0,'#02040f');sky.addColorStop(.38,'#0a1533');sky.addColorStop(.68,'#231d52');sky.addColorStop(1,'#5b2a63');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h*.62);
+ctx.save();for(let i=0;i<110;i++){const sx=(i*173.31)%w,sy=(i*67.17)%(h*.46);ctx.globalAlpha=.18+.62*Math.abs(Math.sin(cityTime*.0012+i));ctx.fillStyle=i%6===0?'#9df6ff':'#e8fbff';ctx.fillRect(sx,sy,i%11===0?2:1,i%11===0?2:1);}ctx.restore();ctx.globalAlpha=1;
+let moon=ctx.createRadialGradient(w*.78,h*.16,2,w*.78,h*.16,70);moon.addColorStop(0,'rgba(210,245,255,.95)');moon.addColorStop(.25,'rgba(120,220,255,.35)');moon.addColorStop(1,'rgba(120,220,255,0)');ctx.fillStyle=moon;ctx.beginPath();ctx.arc(w*.78,h*.16,70,0,Math.PI*2);ctx.fill();ctx.fillStyle='#dffaff';ctx.beginPath();ctx.arc(w*.78,h*.16,17,0,Math.PI*2);ctx.fill();
+function drawSkyline(color,baseY,minH,maxH,seed,offset,alpha){ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=color;for(let i=-2;i<40;i++){const bw=w/24+(i%4)*9,bx=((i*(w+100)/38)+offset)%(w+100)-50,bh=minH+(Math.sin(i*seed)*.5+.5)*(maxH-minH),by=baseY-bh;ctx.fillRect(bx,by,bw-8,bh+16);ctx.fillStyle='rgba(90,240,255,.45)';for(let wy=by+8;wy<baseY-8;wy+=13)for(let wx=bx+5;wx<bx+bw-16;wx+=11)if(((wx+wy+i*4+Math.floor(cityTime/850))%6)!==0)ctx.fillRect(wx,wy,3,5);ctx.fillStyle=color;}ctx.restore();}
+drawSkyline('#0a1c33',h*.565,h*.06,h*.20,7.3,cityTime*.004,1);drawSkyline('#132a4d',h*.585,h*.09,h*.27,11.7,cityTime*.009,1);
+let haze=ctx.createLinearGradient(0,h*.36,0,h*.64);haze.addColorStop(0,'rgba(20,190,240,0)');haze.addColorStop(.55,'rgba(45,215,255,.20)');haze.addColorStop(1,'rgba(2,8,23,0)');ctx.fillStyle=haze;ctx.fillRect(0,h*.36,w,h*.28);
+let floor=ctx.createLinearGradient(0,h*.50,0,h);floor.addColorStop(0,'#153a55');floor.addColorStop(.35,'#0a1e33');floor.addColorStop(1,'#02070f');ctx.fillStyle=floor;ctx.fillRect(0,h*.50,w,h*.50);
+ctx.lineWidth=1.4;
+for(let z=-6;z>-90;z-=5){const a=project(-9,z),b=project(9,z);if(a&&b){ctx.strokeStyle=z%10===-5?'rgba(45,235,255,.20)':'rgba(230,185,90,.16)';ctx.beginPath();ctx.moveTo(a.x,a.y+45);ctx.lineTo(b.x,b.y+45);ctx.stroke();}}
+for(let x=-9;x<=9;x+=3){const a=project(x,-2),b=project(x,-88);if(a&&b){ctx.strokeStyle='rgba(40,210,255,.16)';ctx.beginPath();ctx.moveTo(a.x,a.y+45);ctx.lineTo(b.x,b.y+45);ctx.stroke();}}
+for(let z=-4;z>-78;z-=8){const a=project(0,z),b=project(0,z-3.5);if(a&&b){ctx.strokeStyle='rgba(255,90,190,.75)';ctx.lineWidth=Math.max(1,Math.min(5,a.size*.028));ctx.beginPath();ctx.moveTo(a.x,a.y+46);ctx.lineTo(b.x,b.y+46);ctx.stroke();}}
+const towers=[];
+for(let row=0;row<8;row++){const z=-12-row*10.5;for(const side of [-1,1]){const offset=(row%2)*1.25;towers.push({x:side*(10.5+offset),z,wid:4.8+(row%3)*.55,hei:7.2+((row*7+(side>0?2:0))%5)*1.15,row,side});}}
+towers.sort((a,b)=>a.z-b.z);
+for(const b of towers){const p=project(b.x,b.z);if(!p)continue;const bw=Math.min(w*.48,p.size*b.wid),bh=Math.min(h*1.3,p.size*b.hei),base=p.y+42,top=base-bh,left=p.x-bw/2,right=p.x+bw/2;let facade=ctx.createLinearGradient(left,top,right,base);facade.addColorStop(0,'#1d5c80');facade.addColorStop(.25,'#0a2f4e');facade.addColorStop(1,'#030d1e');ctx.fillStyle=facade;ctx.fillRect(left,top,bw,bh);ctx.fillStyle='#041426';ctx.beginPath();ctx.moveTo(right,top);ctx.lineTo(right+bw*.16,top-bh*.035);ctx.lineTo(right+bw*.16,base-bh*.02);ctx.lineTo(right,base);ctx.closePath();ctx.fill();ctx.strokeStyle='rgba(70,225,255,.65)';ctx.lineWidth=Math.max(1,p.size*.012);ctx.strokeRect(left,top,bw,bh);const cols=Math.max(2,Math.min(8,Math.floor(b.wid*1.15))),rows=Math.max(3,Math.min(15,Math.floor(b.hei*1.2))),gapX=bw/(cols+1),gapY=bh/(rows+1),winW=Math.max(1,gapX*.5),winH=Math.max(1,gapY*.4);for(let yy=1;yy<=rows;yy++)for(let xx=1;xx<=cols;xx++){const wx=left+xx*gapX-winW/2,wy=top+yy*gapY-winH/2,lit=(xx*7+yy*3+b.row*5+Math.floor(cityTime/1400))%7;ctx.globalAlpha=lit===3?.35:.92;ctx.fillStyle=lit===0?'#ffcf6b':lit===1?'#a7fbff':lit===2?'#43ecff':'#1a6686';ctx.fillRect(wx,wy,winW,winH);ctx.globalAlpha=1;}ctx.fillStyle='#06182b';ctx.fillRect(left-bw*.05,top-bh*.035,bw*1.1,bh*.04);ctx.shadowColor='#2ae6ff';ctx.shadowBlur=14;ctx.fillStyle=b.row%2?'#62f6ff':'#ffcf70';ctx.fillRect(p.x-bw*.035,top-bh*.08,bw*.07,Math.max(2,bh*.035));ctx.shadowBlur=0;ctx.strokeStyle='#59eaff';ctx.lineWidth=Math.max(1,p.size*.018);ctx.beginPath();ctx.moveTo(p.x,top-bh*.08);ctx.lineTo(p.x,top-bh*.22);ctx.stroke();if(b.row%2===0&&p.size>13&&bw>40){const signY=top+bh*.56;ctx.fillStyle='rgba(3,19,38,.88)';ctx.fillRect(left+bw*.12,signY,bw*.76,Math.max(10,bh*.12));ctx.strokeStyle='#57f4ff';ctx.strokeRect(left+bw*.12,signY,bw*.76,Math.max(10,bh*.12));ctx.fillStyle='#9dfaff';ctx.font=`900 ${Math.max(7,Math.min(18,bw*.105))}px Arial`;ctx.textAlign='center';ctx.fillText(b.row===0?'RAM CITY':'NEXUS',p.x,signY+Math.max(9,bh*.085));}}
+for(let z=-10;z>-70;z-=13)for(const x of [-6.6,6.6]){const foot=project(x,z,0),head=project(x,z,4.4);if(!foot||!head)continue;ctx.strokeStyle='#4bdfff';ctx.lineWidth=Math.max(1,foot.size*.035);ctx.beginPath();ctx.moveTo(foot.x,foot.y+43);ctx.lineTo(head.x,head.y);ctx.stroke();ctx.shadowColor='#72faff';ctx.shadowBlur=20;ctx.fillStyle='#baffff';ctx.beginPath();ctx.ellipse(head.x,head.y,Math.max(2,head.size*.10),Math.max(1,head.size*.035),0,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;}
+for(let i=0;i<5;i++){const z=-19-i*16,x=Math.sin(cityTime*.00045+i*2.1)*(7.2+i*.5),p=project(x,z,4.1+(i%2)*1.5);if(!p)continue;const cw=Math.max(8,Math.min(96,p.size*.7)),ch=Math.max(3,cw*.22);ctx.save();ctx.translate(p.x,p.y);ctx.shadowColor=i%2?'#a46bff':'#3cf6ff';ctx.shadowBlur=18;ctx.fillStyle=i%2?'#553a83':'#126b91';ctx.beginPath();ctx.moveTo(-cw*.65,0);ctx.lineTo(-cw*.28,-ch*.65);ctx.lineTo(cw*.35,-ch*.5);ctx.lineTo(cw*.7,0);ctx.lineTo(cw*.35,ch*.45);ctx.lineTo(-cw*.45,ch*.4);ctx.closePath();ctx.fill();ctx.strokeStyle='#baffff';ctx.lineWidth=Math.max(1,cw*.025);ctx.stroke();ctx.fillStyle='#dbffff';ctx.fillRect(-cw*.35,-ch*.1,cw*.7,Math.max(1,ch*.13));ctx.strokeStyle='rgba(70,235,255,.55)';ctx.lineWidth=Math.max(1,cw*.045);ctx.beginPath();ctx.moveTo(-cw*.7,ch*.16);ctx.lineTo(-cw*1.6,ch*.4);ctx.stroke();ctx.restore();}
+// OBSTÁCULOS DA AVENIDA: roulotes, carrinhas avariadas e barreiras de obras
+for(const o of obstacles){
+ const p=project(o.x,o.z,0);if(!p)continue;
+ const scale=p.size,base=p.y+48;
+ const ww=Math.max(9,Math.min(250,scale*(o.kind==='barrier'?4.2:3.55)));
+ const hh=Math.max(6,Math.min(132,scale*(o.kind==='barrier'?.75:1.72)));
+ ctx.save();ctx.translate(p.x,base);
+ // Sombra de contacto sobre a estrada
+ ctx.fillStyle='#0009';ctx.beginPath();ctx.ellipse(0,hh*.36,ww*.62,Math.max(2,hh*.18),0,0,Math.PI*2);ctx.fill();
+ if(o.kind==='barrier'){
+  ctx.shadowColor='#ffb44c';ctx.shadowBlur=10;
+  ctx.fillStyle='#17283a';ctx.fillRect(-ww*.5,-hh*.48,ww,hh*.7);
+  ctx.strokeStyle='#ffbd58';ctx.lineWidth=Math.max(1,scale*.055);ctx.strokeRect(-ww*.5,-hh*.48,ww,hh*.7);
+  for(let k=-3;k<=3;k++){
+   ctx.save();ctx.translate(k*ww*.145,0);ctx.rotate(-.55);
+   ctx.fillStyle=k%2?'#fff0c4':'#ff8c36';ctx.fillRect(-ww*.035,-hh*.5,ww*.07,hh*.72);ctx.restore();
+  }
+  ctx.fillStyle='#9cfaff';ctx.fillRect(-ww*.42,-hh*.65,ww*.12,hh*.12);ctx.fillRect(ww*.30,-hh*.65,ww*.12,hh*.12);
+  ctx.shadowBlur=0;
+ }else if(o.kind==='caravan'){
+  // Rodas e chassis
+  for(let side of [-1,1])for(let k of [-.29,.29]){
+   ctx.fillStyle='#050c16';ctx.beginPath();ctx.ellipse(ww*k,hh*.28,ww*.095,hh*.19,0,0,Math.PI*2);ctx.fill();
+   ctx.strokeStyle='#88d9e7';ctx.lineWidth=Math.max(1,scale*.025);ctx.stroke();
+   ctx.fillStyle='#38596c';ctx.beginPath();ctx.arc(ww*k,hh*.28,Math.max(2,hh*.085),0,Math.PI*2);ctx.fill();
+  }
+  // Corpo e tejadilho da roulote
+  const grad=ctx.createLinearGradient(0,-hh*.65,0,hh*.34);
+  grad.addColorStop(0,'#efffff');grad.addColorStop(.22,o.paint);grad.addColorStop(1,'#102b43');
+  ctx.fillStyle=grad;ctx.strokeStyle='#b5fbff';ctx.lineWidth=Math.max(1,scale*.04);
+  ctx.beginPath();ctx.moveTo(-ww*.48,hh*.2);ctx.lineTo(-ww*.46,-hh*.42);ctx.quadraticCurveTo(-ww*.42,-hh*.66,-ww*.18,-hh*.68);ctx.lineTo(ww*.34,-hh*.68);ctx.quadraticCurveTo(ww*.49,-hh*.65,ww*.49,-hh*.43);ctx.lineTo(ww*.48,hh*.2);ctx.closePath();ctx.fill();ctx.stroke();
+  // Friso lateral e janelas panorâmicas
+  ctx.fillStyle='#071f35';ctx.fillRect(-ww*.38,-hh*.42,ww*.76,hh*.28);
+  for(let k=-1;k<=2;k++){
+   ctx.fillStyle=k%2?'#80f5ff':'#c9ffff';ctx.globalAlpha=.82;
+   ctx.fillRect(ww*(k*.18-.27),-hh*.38,ww*.13,hh*.19);ctx.globalAlpha=1;
+  }
+  ctx.strokeStyle='#d9ffff';ctx.lineWidth=Math.max(1,scale*.02);
+  ctx.beginPath();ctx.moveTo(ww*.12,-hh*.67);ctx.lineTo(ww*.12,hh*.16);ctx.stroke();
+  // Porta, escada, toldo e painel solar no tejadilho
+  ctx.fillStyle='#09253b';ctx.fillRect(-ww*.08,-hh*.31,ww*.16,hh*.5);
+  ctx.strokeStyle='#9dfaff';ctx.strokeRect(-ww*.08,-hh*.31,ww*.16,hh*.5);
+  ctx.fillStyle='#244b66';ctx.fillRect(-ww*.03,-hh*.1,ww*.07,hh*.05);
+  ctx.fillStyle='#101f36';ctx.fillRect(-ww*.25,-hh*.78,ww*.5,hh*.08);
+  ctx.strokeStyle='#5cf3ff';ctx.strokeRect(-ww*.25,-hh*.78,ww*.5,hh*.08);
+  for(let k=0;k<4;k++){ctx.fillStyle='#36d8f4';ctx.fillRect(-ww*.21+k*ww*.115,-hh*.76,ww*.08,hh*.04);}
+  ctx.fillStyle='#ffcd70';ctx.fillRect(-ww*.47,hh*.04,ww*.08,hh*.07);ctx.fillRect(ww*.39,hh*.04,ww*.08,hh*.07);
+  // Engate frontal
+  ctx.strokeStyle='#c5dce5';ctx.lineWidth=Math.max(1,scale*.035);ctx.beginPath();ctx.moveTo(ww*.48,hh*.16);ctx.lineTo(ww*.62,hh*.30);ctx.stroke();
+ }else{
+  // Carrinha / veículo futurista abandonado
+  const grad=ctx.createLinearGradient(0,-hh*.55,0,hh*.35);grad.addColorStop(0,'#d3e8f2');grad.addColorStop(.3,o.paint);grad.addColorStop(1,'#10182d');
+  ctx.fillStyle=grad;ctx.strokeStyle='#a6f5ff';ctx.lineWidth=Math.max(1,scale*.04);
+  ctx.beginPath();ctx.moveTo(-ww*.55,hh*.18);ctx.lineTo(-ww*.43,-hh*.25);ctx.lineTo(-ww*.18,-hh*.55);ctx.lineTo(ww*.27,-hh*.55);ctx.lineTo(ww*.48,-hh*.18);ctx.lineTo(ww*.56,hh*.18);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#061b31';ctx.fillRect(-ww*.25,-hh*.43,ww*.5,hh*.24);
+  ctx.fillStyle='#a8faff';ctx.fillRect(-ww*.45,hh*.01,ww*.17,hh*.08);ctx.fillRect(ww*.28,hh*.01,ww*.17,hh*.08);
+  for(let side of [-1,1]){ctx.fillStyle='#050b15';ctx.beginPath();ctx.arc(side*ww*.32,hh*.2,hh*.19,0,Math.PI*2);ctx.fill();}
+  ctx.strokeStyle='#ff754e';ctx.lineWidth=Math.max(1,scale*.03);ctx.beginPath();ctx.moveTo(-ww*.25,-hh*.5);ctx.lineTo(ww*.25,hh*.5);ctx.stroke();
+ }
+ ctx.restore();
+}
+// checkpoints: portais neon
+for(let i=cp;i<6;i++){let z=-(i+1)*10-3;let p=project(0,z);if(!p)continue;let scale=Math.min(1.8,150/p.depth);let ww=110*scale,hh=170*scale;ctx.strokeStyle=i===cp?'#7affff':'#8659ff';ctx.lineWidth=4;ctx.shadowBlur=18;ctx.shadowColor=ctx.strokeStyle;ctx.strokeRect(p.x-ww/2,p.y-hh*.72,ww,hh);ctx.shadowBlur=0;ctx.fillStyle='#d5ffff';ctx.font=`bold ${Math.max(9,13*scale)}px Arial`;ctx.textAlign='center';ctx.fillText('CHECKPOINT '+(i+1),p.x,p.y-hh*.8)}
+// AMEAÇAS DA RAM CITY: três classes de inimigos biomecânicos
+for(let e of enemies){
+ let p=project(e.x,e.z,.68);if(!p)continue;
+ const type=e.type||'scout',t=performance.now(),scale=e.scale||1;
+ const r=Math.max(5,Math.min(112,p.size*.34*scale));
+ const palette=type==='titan'
+  ?{a:'#ffb15e',b:'#e34e35',c:'#641c29',glow:'#ff573e',eye:'#fff3a0'}
+  :type==='stalker'
+  ?{a:'#e4a5ff',b:'#974be0',c:'#32145d',glow:'#c36aff',eye:'#ff526e'}
+  :{a:'#b9ff87',b:'#53bd4b',c:'#173e32',glow:'#7dff54',eye:'#ff4357'};
+ const pulse=1+Math.sin(t*.006+e.phase)*.055;
+ ctx.save();ctx.translate(p.x,p.y);ctx.rotate(Math.sin(t*.0017+e.phase)*.075);ctx.scale(pulse,pulse);
+ // sombra/aura energética
+ ctx.shadowColor=palette.glow;ctx.shadowBlur=type==='titan'?34:24;
+ ctx.strokeStyle=palette.glow;ctx.globalAlpha=.8;ctx.lineWidth=Math.max(2,r*.055);
+ ctx.beginPath();ctx.ellipse(0,0,r*(type==='titan'?1.45:1.34),r*.63,t*.0007,0,Math.PI*2);ctx.stroke();
+ ctx.globalAlpha=1;ctx.shadowBlur=0;
+ // seis patas articuladas / lâminas mecânicas
+ const legs=type==='scout'?4:6;
+ for(let k=0;k<legs;k++){
+  const a=k*Math.PI*2/legs+t*.00035*(k%2?1:-1)+e.phase*.08;
+  const bx=Math.cos(a),by=Math.sin(a);
+  const jx=bx*r*1.02+Math.cos(a+1.2)*r*.18;
+  const jy=by*r*.9+Math.sin(a+1.2)*r*.16;
+  const ex=bx*r*(type==='titan'?1.78:1.62),ey=by*r*(type==='titan'?1.46:1.38);
+  ctx.strokeStyle=palette.c;ctx.lineWidth=Math.max(3,r*.14);ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(bx*r*.58,by*r*.58);ctx.lineTo(jx,jy);ctx.lineTo(ex,ey);ctx.stroke();
+  ctx.strokeStyle=palette.a;ctx.lineWidth=Math.max(1.5,r*.045);
+  ctx.beginPath();ctx.moveTo(bx*r*.58,by*r*.58);ctx.lineTo(jx,jy);ctx.lineTo(ex,ey);ctx.stroke();
+  ctx.fillStyle=palette.b;ctx.beginPath();ctx.arc(jx,jy,Math.max(2,r*.11),0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=palette.eye;ctx.beginPath();ctx.arc(ex,ey,Math.max(1.5,r*.045),0,Math.PI*2);ctx.fill();
+ }
+ // barbatanas / asas de energia nos stalkers
+ if(type!=='scout'){
+  for(let side of [-1,1]){
+   ctx.save();ctx.scale(side,1);ctx.fillStyle=palette.c;ctx.strokeStyle=palette.a;ctx.lineWidth=Math.max(1,r*.04);
+   ctx.beginPath();ctx.moveTo(r*.48,-r*.25);ctx.lineTo(r*1.42,-r*.88);ctx.lineTo(r*1.18,-r*.05);ctx.lineTo(r*.62,r*.17);ctx.closePath();ctx.fill();ctx.stroke();
+   ctx.strokeStyle=palette.glow;ctx.beginPath();ctx.moveTo(r*.7,-r*.25);ctx.lineTo(r*1.27,-r*.68);ctx.stroke();ctx.restore();
+  }
+ }
+ // carapaça principal em forma de polígono
+ const bodyGrad=ctx.createRadialGradient(-r*.3,-r*.4,r*.04,0,0,r*1.15);
+ bodyGrad.addColorStop(0,palette.a);bodyGrad.addColorStop(.3,palette.b);bodyGrad.addColorStop(1,palette.c);
+ ctx.fillStyle=bodyGrad;ctx.strokeStyle=palette.a;ctx.lineWidth=Math.max(2,r*.07);
+ ctx.beginPath();
+ const sides=type==='titan'?8:6;
+ for(let k=0;k<sides;k++){const a=-Math.PI/2+k*Math.PI*2/sides,rr=r*(k%2===0?1.08:.88);const xx=Math.cos(a)*rr,yy=Math.sin(a)*rr;k===0?ctx.moveTo(xx,yy):ctx.lineTo(xx,yy);}
+ ctx.closePath();ctx.fill();ctx.stroke();
+ // placas de blindagem em camadas
+ ctx.fillStyle=palette.c;ctx.strokeStyle=palette.a;ctx.lineWidth=Math.max(1,r*.035);
+ for(let k=0;k<(type==='titan'?5:3);k++){
+  const yy=-r*.62+k*r*.29,ww=r*(type==='titan'?.72:.62);
+  ctx.beginPath();ctx.moveTo(-ww,yy);ctx.lineTo(-ww*.68,yy-r*.17);ctx.lineTo(ww*.68,yy-r*.17);ctx.lineTo(ww,yy);ctx.lineTo(ww*.72,yy+r*.12);ctx.lineTo(-ww*.72,yy+r*.12);ctx.closePath();ctx.fill();ctx.stroke();
+ }
+ // cabeça / visor com múltiplos olhos
+ ctx.fillStyle='#061321';ctx.strokeStyle=palette.glow;ctx.lineWidth=Math.max(1.5,r*.045);
+ ctx.beginPath();ctx.roundRect(-r*.68,-r*.25,r*1.36,r*.48,r*.15);ctx.fill();ctx.stroke();
+ ctx.shadowColor=palette.eye;ctx.shadowBlur=r*.34;ctx.fillStyle=palette.eye;
+ const eyeCount=type==='titan'?3:2;
+ for(let k=0;k<eyeCount;k++){
+  const ex=(k-(eyeCount-1)/2)*r*.34;
+  ctx.beginPath();ctx.ellipse(ex,-r*.02,r*.105,r*.075,0,0,Math.PI*2);ctx.fill();
+ }
+ ctx.shadowBlur=0;
+ // núcleo de energia exposto
+ const core=ctx.createRadialGradient(0,r*.34,1,0,r*.34,r*.32);
+ core.addColorStop(0,'#ffffff');core.addColorStop(.2,palette.eye);core.addColorStop(.62,palette.glow);core.addColorStop(1,palette.c);
+ ctx.fillStyle=core;ctx.beginPath();ctx.arc(0,r*.34,r*(type==='titan'?.25:.2),0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle=palette.a;ctx.lineWidth=Math.max(1,r*.045);ctx.beginPath();ctx.arc(0,r*.34,r*.29,0,Math.PI*2);ctx.stroke();
+ // antenas e pequenos emissores
+ for(let side of [-1,1]){
+  ctx.strokeStyle=palette.a;ctx.lineWidth=Math.max(1.5,r*.045);
+  ctx.beginPath();ctx.moveTo(side*r*.38,-r*.68);ctx.lineTo(side*r*.62,-r*1.12);ctx.stroke();
+  ctx.shadowColor=palette.glow;ctx.shadowBlur=12;ctx.fillStyle=palette.eye;
+  ctx.beginPath();ctx.arc(side*r*.62,-r*1.12,Math.max(2,r*.065),0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+ }
+ // indicador de blindagem para stalkers e titãs
+ if(e.maxHp>1){
+  const barW=r*1.8,barY=-r*1.5;
+  ctx.fillStyle='#06101d';ctx.fillRect(-barW/2,barY,barW,Math.max(3,r*.1));
+  ctx.fillStyle=palette.glow;ctx.fillRect(-barW/2,barY,barW*(e.hp/e.maxHp),Math.max(3,r*.1));
+  ctx.strokeStyle='#eaffff99';ctx.lineWidth=1;ctx.strokeRect(-barW/2,barY,barW,Math.max(3,r*.1));
+  ctx.fillStyle=palette.a;ctx.font=`900 ${Math.max(7,Math.min(12,r*.19))}px Arial`;ctx.textAlign='center';
+  ctx.fillText(type==='titan'?'TITÃ':type==='stalker'?'CAÇADOR':'SENTINELA',0,barY-r*.12);
+ }
+ // flash branco quando recebe um disparo
+ if(e.hit>t){ctx.globalAlpha=.48;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,0,r*1.2,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+ ctx.restore();
+}
+// flashes e rastos dos disparos
+for(const sh of shots){const q=project(sh.x,sh.z,1);if(q){ctx.save();ctx.strokeStyle='#aaffff';ctx.lineWidth=3;ctx.shadowColor='#5ffaff';ctx.shadowBlur=18;ctx.beginPath();ctx.moveTo(q.x-8,q.y);ctx.lineTo(q.x+8,q.y);ctx.stroke();ctx.restore();}}
+// Projécteis de plasma inimigos: esferas incandescentes com cauda de energia
+for(const b of enemyBolts){
+ const q=project(b.x,b.z,b.y);if(!q)continue;
+ const r=Math.max(3,Math.min(19,q.size*.13));
+ ctx.save();ctx.strokeStyle=b.type==='titan'?'#ff934d':'#ff4c86';ctx.lineWidth=Math.max(2,r*.55);
+ ctx.shadowColor='#ff315e';ctx.shadowBlur=18;
+ ctx.beginPath();ctx.moveTo(q.x-b.vx*.055*q.size,q.y-b.vz*.055*q.size);ctx.lineTo(q.x,q.y);ctx.stroke();
+ const orb=ctx.createRadialGradient(q.x-r*.3,q.y-r*.3,1,q.x,q.y,r);
+ orb.addColorStop(0,'#ffffff');orb.addColorStop(.28,b.type==='titan'?'#ffe6a1':'#ffd0ec');
+ orb.addColorStop(.65,b.type==='titan'?'#ff7a3b':'#ff3f86');orb.addColorStop(1,'#701442');
+ ctx.fillStyle=orb;ctx.beginPath();ctx.arc(q.x,q.y,r,0,Math.PI*2);ctx.fill();ctx.restore();
+}
+for(let p of particles){let q=project(p.x,p.z,p.y);if(q){ctx.fillStyle=p.color;ctx.globalAlpha=Math.max(0,p.life*3);ctx.beginPath();ctx.arc(q.x,q.y,Math.max(1,q.size*.025),0,7);ctx.fill();ctx.globalAlpha=1}}
+// ARMA DDR5 STORM: espingarda de plasma com dois canos e núcleo de energia
+const kick=Math.max(0,1-(performance.now()-lastFireAt)/190);
+ctx.save();
+ctx.translate(w*.79,h*.89+Math.sin(performance.now()*.006)*2+kick*17);
+ctx.rotate(-.065+Math.sin(performance.now()*.003)*.009+kick*.045);
+ctx.shadowColor='#08dcff';ctx.shadowBlur=24;
+// Coronho e chassis angular
+const body=ctx.createLinearGradient(-78,-150,70,62);
+body.addColorStop(0,'#d6ffff');body.addColorStop(.12,'#24bfd0');body.addColorStop(.36,'#12618b');body.addColorStop(.72,'#09223e');body.addColorStop(1,'#020915');
+ctx.fillStyle=body;ctx.strokeStyle='#8cffff';ctx.lineWidth=3;
+ctx.beginPath();ctx.moveTo(-45,-95);ctx.lineTo(-35,-139);ctx.lineTo(-18,-157);ctx.lineTo(34,-157);ctx.lineTo(50,-126);ctx.lineTo(62,10);ctx.lineTo(39,54);ctx.lineTo(-37,54);ctx.lineTo(-56,15);ctx.closePath();ctx.fill();ctx.stroke();
+ctx.shadowBlur=0;
+// Duplo cano com anéis de contenção
+for(let side of [-1,1]){
+ const bx=side*17;
+ ctx.fillStyle='#041322';ctx.strokeStyle='#7efaff';ctx.lineWidth=2;
+ ctx.beginPath();ctx.roundRect(bx-10,-206,20,78,6);ctx.fill();ctx.stroke();
+ ctx.fillStyle='#1a91b2';ctx.fillRect(bx-8,-199,16,7);
+ ctx.strokeStyle='#b9ffff';ctx.lineWidth=2;ctx.strokeRect(bx-9,-151,18,6);
+ ctx.fillStyle='#020a15';ctx.beginPath();ctx.ellipse(bx,-205,7,4,0,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle='#6dfaff';ctx.stroke();
+}
+// Rails laterais e bobinas
+ctx.shadowColor='#41eaff';ctx.shadowBlur=14;ctx.strokeStyle='#53efff';ctx.lineWidth=5;
+ctx.beginPath();ctx.moveTo(-43,-125);ctx.lineTo(-59,-106);ctx.lineTo(-59,-57);ctx.lineTo(-43,-38);ctx.stroke();
+ctx.beginPath();ctx.moveTo(43,-125);ctx.lineTo(59,-106);ctx.lineTo(59,-57);ctx.lineTo(43,-38);ctx.stroke();ctx.shadowBlur=0;
+for(let k=0;k<5;k++){ctx.fillStyle=k%2?'#6efaff':'#f6ffff';ctx.fillRect(-65,-105+k*11,9,4);ctx.fillRect(56,-105+k*11,9,4);}
+// Núcleo central de plasma
+const core=ctx.createRadialGradient(-7,-78,1,0,-78,33);
+core.addColorStop(0,'#ffffff');core.addColorStop(.22,'#b7ffff');core.addColorStop(.48,'#31e6ff');core.addColorStop(1,'#07518b');
+ctx.shadowColor='#31eaff';ctx.shadowBlur=24;ctx.fillStyle=core;ctx.beginPath();ctx.arc(0,-78,25,0,Math.PI*2);ctx.fill();
+ctx.strokeStyle='#c7ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,-78,31,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
+// Display de carga e dissipadores
+ctx.fillStyle='#06182a';ctx.strokeStyle='#7efaff';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(-27,-43,54,49,7);ctx.fill();ctx.stroke();
+ctx.fillStyle='#8cffff';ctx.font='900 10px Arial';ctx.textAlign='center';ctx.fillText('DDR5',0,-25);
+ctx.fillStyle='#163e5b';ctx.fillRect(-17,-17,34,10);
+ctx.fillStyle='#61f5ff';ctx.fillRect(-14,-15,28,4);
+for(let yy=13;yy<48;yy+=9){ctx.fillStyle=yy%18?'#176b88':'#9cffff';ctx.fillRect(-34,yy,68,4);}
+ctx.fillStyle='#e9cb72';for(let xx=-32;xx<=25;xx+=11)ctx.fillRect(xx,52,7,10);
+// Mira holográfica sobre os canos
+ctx.strokeStyle='#9effff';ctx.lineWidth=2;ctx.shadowColor='#42efff';ctx.shadowBlur=10;
+ctx.beginPath();ctx.moveTo(-16,-163);ctx.lineTo(-16,-178);ctx.lineTo(16,-178);ctx.lineTo(16,-163);ctx.stroke();
+ctx.beginPath();ctx.arc(0,-179,7,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
+// Flash de disparo de plasma
+if(kick>.25){
+ ctx.save();ctx.globalAlpha=kick;
+ ctx.shadowColor='#baffff';ctx.shadowBlur=34;ctx.fillStyle='#baffff';
+ ctx.beginPath();ctx.moveTo(-27,-207);ctx.lineTo(-42,-238-kick*18);ctx.lineTo(0,-222-kick*30);ctx.lineTo(42,-238-kick*18);ctx.lineTo(27,-207);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#fff3b0';ctx.beginPath();ctx.ellipse(0,-211,17,25*kick,0,0,Math.PI*2);ctx.fill();ctx.restore();
+}
+ctx.restore();
+// mira e vinheta
+let vg=ctx.createRadialGradient(w/2,h/2,h*.18,w/2,h/2,h*.8);vg.addColorStop(.65,'#0000');vg.addColorStop(1,'#0009');ctx.fillStyle=vg;ctx.fillRect(0,0,w,h);
+}
+function update(dt){
+ let f=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0);
+ let side=((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0);
+ const sprinting=sprintMode||keys.shift;
+ const speed=sprinting?8.4:5.4;
+ const mag=Math.hypot(f,side)||1;f/=mag;side/=mag;
+ if(invertControls){f=-f;side=-side;}
+ const accel=Math.min(1,dt*11),brake=Math.min(1,dt*16);
+ velF+=(f-velF)*(f!==0?accel:brake);
+ velSide+=(side-velSide)*(side!==0?accel:brake);
+ const moveX=(Math.cos(player.yaw)*velSide+Math.sin(player.yaw)*velF)*speed*dt;
+ const moveZ=(Math.sin(player.yaw)*velSide-Math.cos(player.yaw)*velF)*speed*dt;
+const nextX=Math.max(-8,Math.min(8,player.x+moveX));
+if(!blockedByObstacle(nextX,player.z))player.x=nextX;
+if(!blockedByObstacle(player.x,player.z+moveZ))player.z+=moveZ;
+for(let e of enemies){
+ let dx=player.x-e.x,dz=player.z-e.z,d=Math.hypot(dx,dz);
+ if(d>1.4){
+  const sx=e.x+dx/d*dt*(e.speed||.85),sz=e.z+dz/d*dt*(e.speed||.85);
+  if(!blockedByObstacle(sx,e.z))e.x=sx;
+  if(!blockedByObstacle(e.x,sz))e.z=sz;
+ }
+ if(d<1.45)takePlayerHit('UM DRONE COLIDIU CONTIGO! Protege as tuas 3 vidas.');
+ // Os inimigos disparam plasma teleguiado na direcção da posição actual do jogador.
+ e.shotTimer-=dt;
+ if(e.shotTimer<=0&&d<38&&d>3){
+  const aimX=player.x-e.x,aimZ=player.z-e.z,dist=Math.hypot(aimX,aimZ)||1;
+  const speedBolt=e.type==='titan'?8.5:e.type==='stalker'?9.5:10.5;
+  enemyBolts.push({x:e.x,y:1.05,z:e.z,vx:aimX/dist*speedBolt,vz:aimZ/dist*speedBolt,life:4.2,type:e.type});
+  e.shotTimer=e.type==='titan'?1.35:e.type==='stalker'?1.75:2.15;
+ }
+}
+for(let s of shots){s.x+=s.dx*dt*29;s.z+=s.dz*dt*29;s.life-=dt;}shots=shots.filter(s=>s.life>0);
+for(const b of enemyBolts){
+ const nx=b.x+b.vx*dt,nz=b.z+b.vz*dt;
+ b.life-=dt;
+ if(blockedByObstacle(nx,nz)){
+  b.life=0;
+  for(let k=0;k<5;k++)particles.push({x:nx,y:.9,z:nz,vx:(Math.random()-.5)*2,vy:Math.random()*1.3,vz:(Math.random()-.5)*2,life:.28,color:'#ffad67'});
+  continue;
+ }
+ b.x=nx;b.z=nz;
+ if(Math.hypot(b.x-player.x,b.z-player.z)<.72){b.life=0;takePlayerHit('FOSTE ATINGIDO POR PLASMA INIMIGO!');}
+}
+enemyBolts=enemyBolts.filter(b=>b.life>0);
+enemies=enemies.filter(e=>e.hp>0);
+for(let p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.life-=dt}particles=particles.filter(p=>p.life>0);
+// checkpoints ao atravessar portais
+let targetZ=-(cp+1)*10-3;if(cp<6&&player.z<targetZ+1.5){let info=checkpoints[cp];cp++;hud();paused=true;document.exitPointerLock?.();$('fps-panel').innerHTML=`<h2>${info[0]}</h2><p>${info[1]}</p><p class="fps-small">Checkpoint ${cp} de 6 concluído. Continua a combater os vírus.</p><button id="fps-continue">CONTINUAR</button>`;$('fps-panel').style.display='block';$('fps-continue').onclick=()=>{$('fps-panel').style.display='none';paused=false;if(matchMedia('(pointer:fine)').matches)cv.requestPointerLock?.();};if(cp===6){$('fps-panel').innerHTML='<h2>PORTAL FINAL DESBLOQUEADO</h2><p>Chegaste à memória central! Para a salvar, responde corretamente às 10 perguntas sobre RAM.</p><button id="fps-finalquiz">INICIAR TESTE FINAL</button>';$('fps-finalquiz').onclick=quizStart;}}
+// repor inimigos gradualmente na distância
+if(enemies.length<6&&Math.random()<dt*.9)spawnEnemy(player.z-25-(Math.random()*22),(Math.random()-.5)*14);hud();}
+const panelIntro='<h2>OPERAÇÃO: SALVAR A MEMÓRIA</h2><p>A cidade futurista RAM CITY está sob ataque! Percorre as seis estações, aprende sobre memória e elimina os drones-vírus com a arma DDR3. No fim, responde a 10 perguntas para salvar a RAM.</p><p><b>3 vidas.</b> Usa os botões no ecrã ou WASD para andar. Desvia-te das roulotes e barreiras, aponta com o rato ou com a zona de mira e dispara. Os drones também disparam plasma contra ti. O botão INVERTER troca os sentidos dos controlos.</p><p class="fps-small">Controlos no ecrã: setas para andar, zona central para apontar, DISPARAR para eliminar vírus. INVERTER troca o sentido de todos os eixos. No PC também podes usar WASD e o rato.</p><button id="fps-start">COMEÇAR A MISSÃO</button>';
+function quizStart(){paused=true;quizIndex=0;score=0;showQuestion()}
+function showQuestion(){let q=questions[quizIndex];$('fps-panel').innerHTML=`<h2>TESTE FINAL · ${quizIndex+1}/10</h2><p>${q[0]}</p><div id="fps-opts"></div><p id="fps-feedback"></p>`;q[1].forEach((a,i)=>{let b=document.createElement('button');b.textContent=a;b.onclick=()=>{if($('fps-feedback').dataset.done)return;$('fps-feedback').dataset.done='1';if(i===q[2]){score++;$('fps-feedback').textContent='✓ Correto!';}else $('fps-feedback').textContent='✕ Não foi desta. Resposta certa: '+q[1][q[2]];let n=document.createElement('button');n.textContent=quizIndex===9?'VER RESULTADO':'PRÓXIMA PERGUNTA';n.onclick=()=>{quizIndex++;if(quizIndex<10)showQuestion();else result()};$('fps-panel').appendChild(n)};$('fps-opts').appendChild(b)})}
+function result(){let win=score>=8;$('fps-panel').innerHTML=`<h2>${win?'🎉 MEMÓRIA RAM SALVA!':'⚠ MEMÓRIA AINDA CORROMPIDA'}</h2><p>Acertaste <b>${score}/10</b> perguntas. ${win?'Excelente trabalho! Eliminaste a ameaça e restauraste a memória RAM.':'Precisas de pelo menos 8 respostas certas. Revê os checkpoints e tenta novamente.'}</p><button id="fps-again">${win?'JOGAR NOVAMENTE':'REPETIR TESTE'}</button>`;$('fps-again').onclick=()=>{if(win){$('fps-panel').innerHTML=panelIntro;$('fps-start').onclick=start}else{quizIndex=0;score=0;showQuestion()}}}
+function loop(t){if(!active)return;let dt=Math.min(.04,(t-last)/1000||.016);last=t;if(!paused)update(dt);draw();requestAnimationFrame(loop)}
+})();
+</script>
+
+</body>
+</html>
